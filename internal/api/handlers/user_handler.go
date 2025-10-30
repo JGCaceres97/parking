@@ -27,7 +27,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
-	users, err := h.service.ListUsers(ctx)
+	userID, err := middlewares.GetUserIDFromContext(ctx)
+	if err != nil {
+		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
+		return
+	}
+
+	users, err := h.service.ListAll(ctx, userID)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
@@ -68,7 +74,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive: req.IsActive,
 	}
 
-	user, err := h.service.CreateUser(ctx, newUser)
+	user, err := h.service.Create(ctx, newUser)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
@@ -131,7 +137,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive: req.IsActive,
 	}
 
-	user, err := h.service.UpdateUser(ctx, userID, updatedUser)
+	user, err := h.service.Update(ctx, userID, updatedUser)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
@@ -153,6 +159,45 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, user)
+}
+
+func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
+	defer cancel()
+
+	authUserID, err := middlewares.GetUserIDFromContext(ctx)
+	if err != nil {
+		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
+		return
+	}
+
+	userID := chi.URLParam(r, "userID")
+	if userID == "" {
+		response.ErrorJSON(w, response.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+
+	if userID == authUserID {
+		response.ErrorJSON(w, response.ErrOwnDelete, http.StatusForbidden)
+		return
+	}
+
+	if err := h.service.Delete(ctx, userID); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
+			return
+		}
+
+		if errors.Is(err, ports.ErrUserNotFound) {
+			response.ErrorJSON(w, err, http.StatusNotFound)
+			return
+		}
+
+		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, nil)
 }
 
 func (h *UserHandler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
@@ -228,33 +273,4 @@ func (h *UserHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request)
 	}
 
 	response.JSON(w, http.StatusOK, user)
-}
-
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	userID := chi.URLParam(r, "userID")
-	if userID == "" {
-		response.ErrorJSON(w, response.ErrInvalidID, http.StatusBadRequest)
-		return
-	}
-
-	_, err := h.service.ToggleActive(ctx, userID, false)
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
-		if errors.Is(err, ports.ErrUserNotFound) {
-			response.ErrorJSON(w, err, http.StatusNotFound)
-			return
-		}
-
-		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
-		return
-	}
-
-	response.JSON(w, http.StatusNoContent, nil)
 }
