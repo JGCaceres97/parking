@@ -17,8 +17,9 @@ tipo de vehículo.
   - [Dependencias de Go](#dependencias-de-go)
 - [Ejecución del Proyecto](#-ejecucion-del-proyecto)
   - [Clonación del repositorio](#0-clonación-del-repositorio)
-  - [Preparación de Archivos](#1-preparación-de-archivos)
-  - [Levantar los Servicios](#2-levantar-los-servicios)
+  - [Preparación de archivos](#1-preparación-de-archivos)
+  - [Levantar los servicios](#2-ejecutar-los-servicios)
+  - [Primer inicio de sesión](#3-primer-inicio-de-sesion)
 
 ## 💾 Modelo de Datos (Esquema MySQL)
 
