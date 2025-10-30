@@ -11,6 +11,7 @@ import (
 	"github.com/JGCaceres97/parking/internal/api/middlewares"
 	"github.com/JGCaceres97/parking/internal/core/domain"
 	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/web"
 )
 
 type RouterConfig struct {
@@ -28,6 +29,8 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+
+	r.Handle("/*", web.Handler)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Rutas públicas
