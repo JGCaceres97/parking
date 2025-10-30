@@ -1,0 +1,5 @@
+.zed/
+.air.toml
+.env.example
+Makefile
+README.md
