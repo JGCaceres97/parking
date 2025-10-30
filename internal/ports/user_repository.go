@@ -20,6 +20,9 @@ type UserRepository interface {
 	// Update actualiza la información del usuario.
 	Update(ctx context.Context, user *domain.User) error
 
-	// List lista todos los usuarios.
-	List(ctx context.Context) ([]domain.User, error)
+	// Delete eliminar un usuario.
+	Delete(ctx context.Context, id string) error
+
+	// ListAll lista todos los usuarios, excepto a ti mismo.
+	ListAll(ctx context.Context, id string) ([]domain.User, error)
 }

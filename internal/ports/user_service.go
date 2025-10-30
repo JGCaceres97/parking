@@ -10,17 +10,20 @@ import (
 type UserService interface {
 	// -- Admin
 
-	// CreateUser crea un nuevo usuario. Solo para admins.
-	CreateUser(ctx context.Context, user *domain.User) (*domain.User, error)
+	// Create crea un nuevo usuario.
+	Create(ctx context.Context, user *domain.User) (*domain.User, error)
 
-	// UpdateUser actualiza la información de un usuario específico. Solo para admins.
-	UpdateUser(ctx context.Context, id string, userUpdate *domain.User) (*domain.User, error)
+	// Update actualiza la información de un usuario específico.
+	Update(ctx context.Context, id string, userUpdate *domain.User) (*domain.User, error)
 
-	// ToggleActive bloquea o desbloquea (elimina lógicamente) a un usuario. Solo para admins.
+	// ToggleActive bloquea o desbloquea (elimina lógicamente) a un usuario.
 	ToggleActive(ctx context.Context, id string, isActive bool) (*domain.User, error)
 
-	// ListUsers lista todos los usuarios.
-	ListUsers(ctx context.Context) ([]domain.User, error)
+	// Delete eliminar un usuario.
+	Delete(ctx context.Context, id string) error
+
+	// ListAll lista todos los usuarios.
+	ListAll(ctx context.Context, id string) ([]domain.User, error)
 
 	// -- Common
 
