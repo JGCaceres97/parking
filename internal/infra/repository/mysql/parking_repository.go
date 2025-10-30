@@ -232,6 +232,7 @@ func (r *ParkingRepository) ListHistory(ctx context.Context) ([]domain.ParkingRe
 	query := `
 		SELECT id, user_id, vehicle_type_id, license_plate, entry_time, exit_time, total_charge, calculated_hours
 		FROM PARKING_RECORDS
+		WHERE exit_time IS NOT NULL
 		ORDER BY entry_time DESC;`
 
 	rows, err := r.DB.QueryContext(ctx, query)
