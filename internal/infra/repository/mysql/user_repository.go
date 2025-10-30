@@ -139,7 +139,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	}
 
 	if !exists {
-		return ports.ErrUserNotFound // El usuario realmente no existe
+		return ports.ErrUserNotFound
 	}
 
 	updateQuery := `
@@ -172,15 +172,58 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-func (r *UserRepository) List(ctx context.Context) ([]domain.User, error) {
+func (r *UserRepository) Delete(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
+	defer cancel()
+
+	var exists bool
+	checkQuery := `SELECT EXISTS(SELECT 1 FROM USERS WHERE id = ?);`
+
+	err := r.DB.QueryRowContext(ctx, checkQuery, id).Scan(&exists)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("timeout de DB excedido al verificar existencia de usuario: %w", err)
+		}
+
+		return fmt.Errorf("error al verificar existencia de usuario: %w", err)
+	}
+
+	if !exists {
+		return ports.ErrUserNotFound
+	}
+
+	deleteQuery := `
+		DELETE FROM USERS
+		WHERE id = ?;`
+
+	result, err := r.DB.ExecContext(ctx, deleteQuery, id)
+
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("timeout de DB excedido al eliminar usuario: %w", err)
+		}
+
+		return fmt.Errorf("error al eliminar usuario: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return nil
+	}
+
+	return nil
+}
+
+func (r *UserRepository) ListAll(ctx context.Context, id string) ([]domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
 	query := `
 		SELECT id, username, role, is_active, created_at
-		FROM USERS;`
+		FROM USERS
+		WHERE id != ?;`
 
-	rows, err := r.DB.QueryContext(ctx, query)
+	rows, err := r.DB.QueryContext(ctx, query, id)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("timeout de DB excedido al listar usuarios: %w", ctx.Err())
