@@ -19,7 +19,7 @@ tipo de vehículo.
   - [Clonación del repositorio](#0-clonación-del-repositorio)
   - [Preparación de archivos](#1-preparación-de-archivos)
   - [Levantar los servicios](#2-ejecutar-los-servicios)
-  - [Primer inicio de sesión](#3-primer-inicio-de-sesion)
+  - [Primer inicio de sesión](#3-primer-inicio-de-sesión)
 
 ## 💾 Modelo de Datos (Esquema MySQL)
 
