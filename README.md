@@ -6,17 +6,17 @@ tipo de vehículo.
 
 # Índice
 
-- [Modelo de Datos](#💾-modelo-de-datos-esquema-mysql)
+- [Modelo de Datos](#-modelo-de-datos-esquema-mysql)
   - [Relaciones Clave](#relaciones-clave)
-  - [Tabla: USUARIOS](#tabla-users)
-  - [Tabla: TIPOS DE VEHICULOS](#tabla-vehicle-types)
-  - [Tabla: REGISTROS DE PARQUEO](#tabla-parking_records-transaccional)
-- [Reglas de Negocio para el Cálculo de Tarifas](#💸-reglas-de-negocio-para-el-cálculo-de-tarifas)
-- [Dependencias](#📦-dependencias)
+  - [Tabla: USERS](#tabla-users)
+  - [Tabla: VEHICLE_TYPES](#tabla-vehicle-types)
+  - [Tabla: PARKING_RECORDS](#tabla-parking_records-transaccional)
+- [Reglas de Negocio para el Cálculo de Tarifas](#-reglas-de-negocio-para-el-cálculo-de-tarifas)
+- [Dependencias](#-dependencias)
   - [Entorno de Desarrollo](#entorno-de-desarrollo)
   - [Dependencias de Go](#dependencias-de-go)
-- [Ejecución del Proyecto](#🚀-ejecucion-del-proyecto)
-  - [Clonación del repositorio](#0-clonacion-del-repositorio)
+- [Ejecución del Proyecto](#-ejecucion-del-proyecto)
+  - [Clonación del repositorio](#0-clonación-del-repositorio)
   - [Preparación de Archivos](#1-preparación-de-archivos)
   - [Levantar los Servicios](#2-levantar-los-servicios)
 
@@ -91,6 +91,7 @@ El proyecto está construido en Go y requiere las siguientes dependencias extern
 
 - Go: Versión 1.24 o superior.
 - MySQL: Base de datos relacional para persistencia de datos.
+- Frontend: React 19, TypeScript y Vite para la interfaz de usuario.
 - Docker y Docker Compose: Esenciales para levantar el servicio del API y la base de datos MySQL.
 
 ### Dependencias de Go
@@ -117,11 +118,11 @@ Compose:
 Primero, clone el repositorio a su maquina local y navegue al directorio del proyecto:
 
 ```bash
-  git clone https://github.com/jgcaceres97/parking
-  cd parking
+git clone https://github.com/jgcaceres97/parking
+cd parking
 ```
 
-### 1. - Preparación de Archivos
+### 1. Preparación de archivos
 
 Asegúrese de tener configurados los siguientes archivos en la raíz del proyecto:
 
@@ -129,14 +130,22 @@ Asegúrese de tener configurados los siguientes archivos en la raíz del proyect
 - docker-compose.yml (para definir y conectar los servicios de API y MySQL).
 - .env (para las variables de entorno, incluyendo las credenciales de MySQL y el secreto JWT).
 
-### 2. Levantar los Servicios
+### 2. Ejecutar los servicios
 
 Ejecute el siguiente comando para construir las imágenes (si es necesario) y levantar los
 contenedores de la API y la Base de Datos:
 
 ```bash
-  docker compose up --build
+docker compose up --build
 ```
 
-El API estará disponible en el puerto expuesto por Docker Compose, típicamente
+El servicio estará disponible en el puerto expuesto por Docker Compose, típicamente
 http://localhost:3000.
+
+### 3. Primer inicio de sesión
+
+Al iniciar el servicio por primera vez, el sistema crea un usuario `administrador` por defecto con las siguientes credenciales:
+```bash
+username: admin
+password: admin
+```
