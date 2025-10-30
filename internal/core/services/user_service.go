@@ -20,7 +20,7 @@ func NewUserService(repo ports.UserRepository) ports.UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
+func (s *UserService) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
 	existingUser, err := s.repo.FindByUsername(ctx, user.Username)
 	if err != nil && !errors.Is(err, ports.ErrUserNotFound) {
 		return nil, fmt.Errorf("error al buscar usuario por nombre: %w", err)
@@ -47,7 +47,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *domain.User) (*domai
 	return user, nil
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, id string, userUpdated *domain.User) (*domain.User, error) {
+func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain.User) (*domain.User, error) {
 	existingUser, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -73,6 +73,18 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, userUpdated *do
 	return existingUser, nil
 }
 
+func (s *UserService) Delete(ctx context.Context, id string) error {
+	if err := s.repo.Delete(ctx, id); err != nil {
+		if errors.Is(err, ports.ErrUserNotFound) {
+			return err
+		}
+
+		return fmt.Errorf("error al eliminar usuario en repo: %w", err)
+	}
+
+	return nil
+}
+
 func (s *UserService) ToggleActive(ctx context.Context, id string, isActive bool) (*domain.User, error) {
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
@@ -91,8 +103,8 @@ func (s *UserService) ToggleActive(ctx context.Context, id string, isActive bool
 	return user, nil
 }
 
-func (s *UserService) ListUsers(ctx context.Context) ([]domain.User, error) {
-	return s.repo.List(ctx)
+func (s *UserService) ListAll(ctx context.Context, id string) ([]domain.User, error) {
+	return s.repo.ListAll(ctx, id)
 }
 
 func (s *UserService) UpdateUsername(ctx context.Context, id string, newUsername string) (*domain.User, error) {

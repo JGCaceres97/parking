@@ -62,6 +62,7 @@ func (s *AuthService) Login(ctx context.Context, req dtos.LoginRequest) (*dtos.L
 	}
 
 	response := &dtos.LoginResponse{
+		Role:      user.Role,
 		Token:     tokenStr,
 		TokenType: "Bearer",
 		ExpiresIn: int64(time.Until(expirationTime).Seconds()),
