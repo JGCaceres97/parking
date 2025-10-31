@@ -30,11 +30,11 @@ func Load() *Config {
 
 	cfg := &Config{}
 
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "3306")
-	dbUser := getEnv("MYSQL_USER", "root")
-	dbPass := getEnv("MYSQL_PASSWORD", "password")
-	dbName := getEnv("MYSQL_DATABASE", "parkingDb")
+	dbHost := GetEnv("DB_HOST", "localhost")
+	dbPort := GetEnv("DB_PORT", "3306")
+	dbUser := GetEnv("MYSQL_USER", "root")
+	dbPass := GetEnv("MYSQL_PASSWORD", "password")
+	dbName := GetEnv("MYSQL_DATABASE", "parkingDb")
 
 	cfg.DBConnString = fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=UTC",
@@ -45,9 +45,9 @@ func Load() *Config {
 		dbName,
 	)
 
-	cfg.JWTSecretKey = getEnv("JWT_SECRET", "super_secreto_cambiar_1234")
+	cfg.JWTSecretKey = GetEnv("JWT_SECRET", "super_secreto_cambiar_1234")
 
-	tokenDurationHours := getEnv("TOKEN_DURATION_HOURS", "10")
+	tokenDurationHours := GetEnv("TOKEN_DURATION_HOURS", "10")
 	duration, err := time.ParseDuration(tokenDurationHours + "h")
 	if err != nil {
 		log.Printf("Advertencia: No se pudo parsear TOKEN_DURATION_HOURS. Usando 10h.")
@@ -55,12 +55,12 @@ func Load() *Config {
 	}
 	cfg.TokenDuration = duration
 
-	cfg.ServerPort = getEnv("SERVER_PORT", "3000")
+	cfg.ServerPort = GetEnv("SERVER_PORT", "3000")
 
 	return cfg
 }
 
-func getEnv(key, defaultValue string) string {
+func GetEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}

@@ -8,9 +8,5 @@ CREATE TABLE USERS (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- USR:admin - PASS:admin
-INSERT INTO USERS (id, username, password_hash, role) VALUES
-('01K8M9EX953V6Z68Q96X645BPC', 'admin', '$2a$10$M3wzhyw1mDcspx75s7IwlOXtiH/wVHsAEDSQT8iZd8XEFMKVGv4Ai', 'admin');
-
 -- +goose Down
 DROP TABLE USERS;

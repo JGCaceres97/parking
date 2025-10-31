@@ -20,15 +20,29 @@ import (
 	"github.com/JGCaceres97/parking/internal/infra/repository/mysql"
 )
 
-func main() {
-	// Cargar configuración
-	cfg := config.Load()
+var cfg *config.Config = config.Load()
+var db *sql.DB
+
+func init() {
+	var err error
 
 	// Inicializar conexión con DB
-	db, err := initDB(cfg.DBConnString)
+	db, err = initDB(cfg.DBConnString)
 	if err != nil {
 		log.Fatalf("error al inicializar la base de datos: %v", err)
 	}
+
+	initRepo := mysql.NewInitRepository(db)
+	initService := services.NewInitService(initRepo)
+
+	password := config.GetEnv("ADMIN_PASSWORD", "admin")
+
+	if err = initService.CreateAdmin(context.Background(), password); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func main() {
 	defer func() {
 		log.Println("Cerrando conexión a MySQL...")
 		if err := db.Close(); err != nil {
@@ -37,10 +51,8 @@ func main() {
 
 		log.Println("Conexión a MySQL cerrada.")
 	}()
-	log.Println("Conexión a MySQL establecida con éxito.")
 
 	// Inyección de dependencias
-
 	// -- A. Repositorios
 	parkingRepo := mysql.NewParkingRepository(db)
 	userRepo := mysql.NewUserRepository(db)
