@@ -149,7 +149,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrUsernameExists) {
+		if errors.Is(err, ports.ErrUsernameExists) || errors.Is(err, ports.ErrAdminOperation) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
@@ -193,6 +193,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if errors.Is(err, ports.ErrAdminOperation) {
+			response.ErrorJSON(w, err, http.StatusConflict)
+			return
+		}
+
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
 	}
@@ -200,7 +205,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, nil)
 }
 
-func (h *UserHandler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -228,7 +233,7 @@ func (h *UserHandler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrUsernameExists) {
+		if errors.Is(err, ports.ErrUsernameExists) || errors.Is(err, ports.ErrAdminOperation) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
@@ -265,6 +270,11 @@ func (h *UserHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request)
 
 		if errors.Is(err, ports.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
+			return
+		}
+
+		if errors.Is(err, ports.ErrAdminOperation) {
+			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
 

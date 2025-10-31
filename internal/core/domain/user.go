@@ -4,6 +4,8 @@ import "time"
 
 type Role = string
 
+const AdminUsername = "admin"
+
 const (
 	RoleAdmin  Role = "admin"
 	RoleCommon Role = "common"

@@ -48,7 +48,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			r.Get("/parking/history", cfg.ParkingHandler.GetHistory)
 
 			// Users
-			r.Put("/users/me", cfg.UserHandler.UpdateMyProfile)
+			r.Put("/users/me", cfg.UserHandler.UpdateUsername)
 
 			// Vehicle types
 			r.Get("/vehicle-types", cfg.VehicleTypeHandler.ListAll)
