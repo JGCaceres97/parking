@@ -19,6 +19,12 @@ function Toolbar({ title, role }: ToolbarProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const handleClose = () => {
+    setShowModal(false);
+    setUsername("");
+    setError("");
+  };
+
   const handleUpdateUsername = async () => {
     if (!username.trim()) {
       setError("debe ingresar un nuevo nombre de usuario");
@@ -123,6 +129,7 @@ function Toolbar({ title, role }: ToolbarProps) {
             )}
 
             <input
+              disabled={loading}
               type="text"
               placeholder="Nuevo nombre de usuario"
               value={username}
@@ -133,7 +140,7 @@ function Toolbar({ title, role }: ToolbarProps) {
             <div className="flex justify-between gap-2 mt-2">
               <button
                 disabled={loading}
-                onClick={() => setShowModal(false)}
+                onClick={handleClose}
                 className="px-4 py-2 text-gray-700 rounded-md bg-gray-200 hover:bg-gray-300 hover:cursor-pointer"
               >
                 Cancelar

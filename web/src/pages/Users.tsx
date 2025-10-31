@@ -60,14 +60,28 @@ function User() {
     setPassword("");
     setRole("common");
     setIsActive(true);
+
     setShowCreate(true);
+    setError("");
+  };
+
+  const handleCloseCreate = () => {
+    setShowCreate(false);
+    setError("");
   };
 
   const handleOpenUpdate = (user: User) => {
     setUsername(user.username);
     setRole(user.role);
     setIsActive(user.is_active);
+
     setShowUpdate(user);
+    setError("");
+  };
+
+  const handleCloseUpdate = () => {
+    setShowUpdate(null);
+    setError("");
   };
 
   const handleCreateUser = async () => {
@@ -114,6 +128,11 @@ function User() {
 
   const handleUpdateUser = async () => {
     if (!showUpdate) return;
+
+    if (!username.trim()) {
+      setError("se debe ingresar usuario");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -182,7 +201,7 @@ function User() {
       <Toolbar title="Gestión de Estacionamiento" role={userRole} />
 
       <div className="w-full max-w-5xl p-6 space-y-6">
-        {error && (
+        {error && !showCreate && !showUpdate && (
           <div
             className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 shadow"
             role="alert"
@@ -258,22 +277,35 @@ function User() {
         {showCreate && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Crear Usuario</h3>
+              <h3 className="text-lg font-semibold mb-2">Crear Usuario</h3>
+              {error && (
+                <div
+                  className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 shadow"
+                  role="alert"
+                >
+                  <strong className="font-semibold">Error: </strong>
+                  <span className="block sm:inline">{error}</span>
+                </div>
+              )}
+
               <input
+                disabled={loading}
                 type="text"
-                placeholder="Username"
+                placeholder="Usuario"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full mb-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2"
+                className="w-full my-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2"
               />
               <input
+                disabled={loading}
                 type="password"
-                placeholder="Password"
+                placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full mb-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2"
               />
               <select
+                disabled={loading}
                 value={role}
                 onChange={(e) => setRole(e.target.value as Role)}
                 className="w-full mb-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2 hover:cursor-pointer"
@@ -283,6 +315,7 @@ function User() {
               </select>
               <div className="flex items-center mb-3">
                 <input
+                  disabled={loading}
                   type="checkbox"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
@@ -293,7 +326,7 @@ function User() {
               <div className="flex justify-between gap-2 mt-5">
                 <button
                   disabled={loading}
-                  onClick={() => setShowCreate(false)}
+                  onClick={handleCloseCreate}
                   className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 hover:cursor-pointer"
                 >
                   Cancelar
@@ -313,13 +346,23 @@ function User() {
         {showUpdate && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Editar Usuario</h3>
+              <h3 className="text-lg font-semibold mb-2">Editar Usuario</h3>
+              {error && (
+                <div
+                  className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 shadow"
+                  role="alert"
+                >
+                  <strong className="font-semibold">Error: </strong>
+                  <span className="block sm:inline">{error}</span>
+                </div>
+              )}
+
               <input
                 type="text"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full mb-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2"
+                className="w-full my-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2"
               />
               <select
                 value={role}
@@ -341,7 +384,7 @@ function User() {
               <div className="flex justify-between gap-2 mt-5">
                 <button
                   disabled={loading}
-                  onClick={() => setShowUpdate(null)}
+                  onClick={handleCloseUpdate}
                   className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 hover:cursor-pointer"
                 >
                   Cancelar

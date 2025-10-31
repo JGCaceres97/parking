@@ -99,6 +99,7 @@ function Dashboard() {
     }
 
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/v1/parking/entry", {

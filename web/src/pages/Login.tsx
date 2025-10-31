@@ -85,6 +85,7 @@ function Login() {
               Usuario
             </label>
             <input
+              disabled={loading}
               id="username"
               type="text"
               value={username}
@@ -102,6 +103,7 @@ function Login() {
               Contraseña
             </label>
             <input
+              disabled={loading}
               id="password"
               type="password"
               value={password}
