@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/JGCaceres97/parking/config"
 	"github.com/JGCaceres97/parking/internal/core/domain"
@@ -31,7 +32,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 		ctx,
 		query,
 		user.ID,
-		user.Username,
+		strings.ToLower(user.Username),
 		user.Password,
 		user.Role,
 		user.IsActive,

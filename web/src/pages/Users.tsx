@@ -293,7 +293,7 @@ function User() {
                 type="text"
                 placeholder="Usuario"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
                 className="w-full my-3 border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2"
               />
               <input
