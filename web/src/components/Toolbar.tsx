@@ -133,7 +133,7 @@ function Toolbar({ title, role }: ToolbarProps) {
               type="text"
               placeholder="Nuevo nombre de usuario"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="text-gray-700 w-full border border-gray-300 hover:border-gray-400 hover:shadow-sm rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-gray-400"
             />
 
