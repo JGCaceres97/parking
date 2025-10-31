@@ -49,7 +49,6 @@ COPY docker-entrypoint.sh .
 RUN dos2unix docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 # Archivos necesarios
-# COPY .env .
 COPY ./migrations ./migrations
 
 EXPOSE 3000

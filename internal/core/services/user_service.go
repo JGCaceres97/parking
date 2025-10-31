@@ -32,7 +32,7 @@ func (s *UserService) Create(ctx context.Context, user *domain.User) (*domain.Us
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("error al hashear password: %w", err)
+		return nil, fmt.Errorf("error al hashear contraseña: %w", err)
 	}
 
 	user.ID = ulid.GenerateNewULID()
@@ -48,6 +48,10 @@ func (s *UserService) Create(ctx context.Context, user *domain.User) (*domain.Us
 }
 
 func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain.User) (*domain.User, error) {
+	if userUpdated.Username == domain.AdminUsername {
+		return nil, ports.ErrAdminOperation
+	}
+
 	existingUser, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -74,6 +78,15 @@ func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain
 }
 
 func (s *UserService) Delete(ctx context.Context, id string) error {
+	user, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if user.Username == domain.AdminUsername {
+		return ports.ErrAdminOperation
+	}
+
 	if err := s.repo.Delete(ctx, id); err != nil {
 		if errors.Is(err, ports.ErrUserNotFound) {
 			return err
@@ -89,6 +102,10 @@ func (s *UserService) ToggleActive(ctx context.Context, id string, isActive bool
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+
+	if user.Username == domain.AdminUsername {
+		return nil, ports.ErrAdminOperation
 	}
 
 	if user.IsActive == isActive {
@@ -111,6 +128,14 @@ func (s *UserService) UpdateUsername(ctx context.Context, id string, newUsername
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+
+	if user.Username == domain.AdminUsername {
+		return nil, ports.ErrAdminOperation
+	}
+
+	if existingName, _ := s.repo.FindByUsername(ctx, newUsername); existingName != nil && id != existingName.ID {
+		return nil, ports.ErrUsernameExists
 	}
 
 	user.Username = newUsername

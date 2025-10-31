@@ -127,7 +127,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	defer cancel()
 
 	var exists bool
-	checkQuery := `SELECT EXISTS(SELECT 1 FROM USERS WHERE id = ?);`
+	checkQuery := "SELECT EXISTS(SELECT 1 FROM USERS WHERE id = ?);"
 
 	err := r.DB.QueryRowContext(ctx, checkQuery, user.ID).Scan(&exists)
 	if err != nil {

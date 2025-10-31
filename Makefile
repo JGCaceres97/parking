@@ -9,7 +9,7 @@ DB_PASS=$(MYSQL_PASSWORD)
 DB_HOST=$(DB_HOST)
 DB_PORT=$(DB_PORT)
 DB_NAME=$(MYSQL_DATABASE)
-DB_CONN=$(DB_USER):$(DB_PASS)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)?parseTime=true
+DB_CONN=$(DB_USER):$(DB_PASS)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)?parseTime=true&loc=UTC
 
 GOOSE_DIR=./migrations
 
@@ -30,7 +30,7 @@ db-down:
 ## Migraciones (Goose)
 # ------------------------------------------------------------
 # Aplica todas las migraciones pendientes.
-# go tool goose mysql "parkingUser:parkingUserPassword@tcp(localhost:3306)/parkingDb?parseTime=true" up -dir ./migrations
+# go tool goose mysql "parkingUser:parkingUserPassword@tcp(localhost:3306)/parkingDb?parseTime=true&loc=UTC" up -dir ./migrations
 migrate-up:
 	@echo "⬆️ Aplicando migraciones pendientes..."
 	go tool goose $(DB_DRIVER) "$(DB_CONN)" up -dir $(GOOSE_DIR)
