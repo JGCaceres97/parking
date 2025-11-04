@@ -145,7 +145,7 @@ http://localhost:3000.
 
 ### 3. Primer inicio de sesión
 
-Al iniciar el servicio por primera vez, el sistema crea un usuario `administrador` por defecto con las siguientes credenciales:
+Al iniciar el servicio por primera vez, el sistema crea un usuario `administrador` por defecto con las siguientes credenciales, pero puedes definir tu propia contraseña estableciendo la variable de entorno $ADMIN_PASSWORD:
 ```bash
 username: admin
 password: admin
