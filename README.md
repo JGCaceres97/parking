@@ -15,7 +15,7 @@ tipo de vehículo.
 - [Dependencias](#-dependencias)
   - [Entorno de Desarrollo](#entorno-de-desarrollo)
   - [Dependencias de Go](#dependencias-de-go)
-- [Ejecución del Proyecto](#-ejecucion-del-proyecto)
+- [Ejecución del Proyecto](#-ejecución-del-proyecto)
   - [Clonación del repositorio](#0-clonación-del-repositorio)
   - [Preparación de archivos](#1-preparación-de-archivos)
   - [Levantar los servicios](#2-ejecutar-los-servicios)
