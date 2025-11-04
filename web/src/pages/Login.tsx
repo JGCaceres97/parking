@@ -45,7 +45,12 @@ function Login() {
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
-      setError("error de conexión con el servidor");
+
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("error de conexión con el servidor");
+      }
     } finally {
       setLoading(false);
     }

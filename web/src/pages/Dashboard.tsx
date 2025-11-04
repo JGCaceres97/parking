@@ -5,8 +5,8 @@ import {
   FaClock,
   FaDollarSign,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
+import { useAuth } from "../context/AuthContext";
 
 type Tabs = "current" | "history";
 
@@ -27,7 +27,7 @@ interface Record {
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
+  const { setIsLoggedIn } = useAuth();
 
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role") || "";
@@ -52,15 +52,29 @@ function Dashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data: VehicleType[] = await res.json();
-      setTypes(data);
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.status === 401) {
+          setIsLoggedIn(false);
+          return;
+        }
+
+        throw new Error(data.error);
+      }
+
+      setTypes(data as VehicleType[]);
 
       if (data.length > 0) setSelectedTypeId(data[0].id);
     } catch (err) {
       console.error(err);
-      setError("error al cargar tipos de vehículo");
+
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("error al cargar tipos de vehículo");
+      }
     }
-  }, [token]);
+  }, [setIsLoggedIn, token]);
 
   const fetchRecords = useCallback(async () => {
     try {
@@ -68,13 +82,27 @@ function Dashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data: Record[] = await res.json();
-      setRecords(data);
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.status === 401) {
+          setIsLoggedIn(false);
+          return;
+        }
+
+        throw new Error(data.error);
+      }
+
+      setRecords(data as Record[]);
     } catch (err) {
       console.error(err);
-      setError("error al cargar información de vehículos");
+
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("error al cargar información de vehículos");
+      }
     }
-  }, [token, activeTab]);
+  }, [setIsLoggedIn, token, activeTab]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -90,7 +118,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchData = async () => await fetchRecords();
     fetchData();
-  }, [navigate, token, fetchRecords]);
+  }, [fetchRecords]);
 
   const handleVehicleEntry = async () => {
     if (!licensePlate.trim() || !selectedTypeId) {

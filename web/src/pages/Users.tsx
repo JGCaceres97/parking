@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import { FaPlus, FaTrash, FaUser } from "react-icons/fa6";
 import Toolbar from "../components/Toolbar";
+import { useAuth } from "../context/AuthContext";
 
 type Role = "admin" | "common";
 
@@ -20,6 +21,8 @@ interface User {
 }
 
 function User() {
+  const { setIsLoggedIn } = useAuth();
+
   const token = localStorage.getItem("token");
   const userRole = localStorage.getItem("role") || "";
 
@@ -42,13 +45,27 @@ function User() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data: User[] = await res.json();
-      setUsers(data);
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.status === 401) {
+          setIsLoggedIn(false);
+          return;
+        }
+
+        throw new Error(data.error);
+      }
+
+      setUsers(data as User[]);
     } catch (err) {
       console.error(err);
-      setError("error al cargar usuarios");
+
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("error al cargar usuarios");
+      }
     }
-  }, [token]);
+  }, [setIsLoggedIn, token]);
 
   useEffect(() => {
     const fetchData = async () => await fetchUsers();
