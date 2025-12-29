@@ -5,20 +5,20 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/internal/application/parking"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 )
 
-type ParkingRepository struct {
+type parkingRepository struct {
 	DB *sql.DB
 }
 
-func NewParkingRepository(db *sql.DB) ports.ParkingRepository {
-	return &ParkingRepository{DB: db}
+func NewParkingRepository(db *sql.DB) parking.Repository {
+	return &parkingRepository{DB: db}
 }
 
-func (r *ParkingRepository) CreateEntry(ctx context.Context, record *domain.ParkingRecord) error {
+func (r *parkingRepository) CreateEntry(ctx context.Context, record *domain.ParkingRecord) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -48,7 +48,7 @@ func (r *ParkingRepository) CreateEntry(ctx context.Context, record *domain.Park
 	return nil
 }
 
-func (r *ParkingRepository) FindByID(ctx context.Context, id string) (*domain.ParkingRecord, error) {
+func (r *parkingRepository) FindByID(ctx context.Context, id string) (*domain.ParkingRecord, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -57,7 +57,7 @@ func (r *ParkingRepository) FindByID(ctx context.Context, id string) (*domain.Pa
 		FROM PARKING_RECORDS
 		WHERE id = ?;`
 
-	record := &domain.ParkingRecord{}
+	var record domain.ParkingRecord
 
 	row := r.DB.QueryRowContext(ctx, query, id)
 
@@ -82,7 +82,7 @@ func (r *ParkingRepository) FindByID(ctx context.Context, id string) (*domain.Pa
 		}
 
 		if err == sql.ErrNoRows {
-			return nil, ports.ErrParkingRecordNotFound
+			return nil, domain.ErrParkingRecordNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar registro de estacionamiento: %w", err)
@@ -101,10 +101,10 @@ func (r *ParkingRepository) FindByID(ctx context.Context, id string) (*domain.Pa
 		record.CalculatedHours = &h
 	}
 
-	return record, nil
+	return &record, nil
 }
 
-func (r *ParkingRepository) FindOpenByLicensePlate(ctx context.Context, licensePlate string) (*domain.ParkingRecord, error) {
+func (r *parkingRepository) FindOpenByLicensePlate(ctx context.Context, licensePlate string) (*domain.ParkingRecord, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -113,7 +113,7 @@ func (r *ParkingRepository) FindOpenByLicensePlate(ctx context.Context, licenseP
 		FROM PARKING_RECORDS
 		WHERE license_plate = ? AND exit_time IS NULL;`
 
-	record := &domain.ParkingRecord{}
+	var record domain.ParkingRecord
 
 	row := r.DB.QueryRowContext(ctx, query, licensePlate)
 
@@ -131,16 +131,16 @@ func (r *ParkingRepository) FindOpenByLicensePlate(ctx context.Context, licenseP
 		}
 
 		if err == sql.ErrNoRows {
-			return nil, ports.ErrParkingRecordNotFound
+			return nil, domain.ErrParkingRecordNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar registro de estacionamiento abierto: %w", err)
 	}
 
-	return record, nil
+	return &record, nil
 }
 
-func (r *ParkingRepository) UpdateExit(ctx context.Context, record *domain.ParkingRecord) error {
+func (r *parkingRepository) UpdateExit(ctx context.Context, record *domain.ParkingRecord) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -148,10 +148,6 @@ func (r *ParkingRepository) UpdateExit(ctx context.Context, record *domain.Parki
 		UPDATE PARKING_RECORDS
 		SET exit_time = ?, total_charge = ?, calculated_hours = ?
 		WHERE id = ?;`
-
-	if record.ExitTime == nil || record.TotalCharge == nil || record.CalculatedHours == nil {
-		return ports.ErrRequiredUpdateFields
-	}
 
 	result, err := r.DB.ExecContext(
 		ctx,
@@ -172,13 +168,13 @@ func (r *ParkingRepository) UpdateExit(ctx context.Context, record *domain.Parki
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return ports.ErrParkingRecordNotFound
+		return domain.ErrParkingRecordNotFound
 	}
 
 	return nil
 }
 
-func (r *ParkingRepository) ListCurrent(ctx context.Context) ([]domain.ParkingRecord, error) {
+func (r *parkingRepository) ListCurrent(ctx context.Context) ([]domain.ParkingRecord, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -198,10 +194,10 @@ func (r *ParkingRepository) ListCurrent(ctx context.Context) ([]domain.ParkingRe
 	}
 	defer rows.Close()
 
-	records := []domain.ParkingRecord{}
+	var records []domain.ParkingRecord
 
 	for rows.Next() {
-		record := domain.ParkingRecord{}
+		var record domain.ParkingRecord
 
 		err := rows.Scan(
 			&record.ID,
@@ -225,7 +221,7 @@ func (r *ParkingRepository) ListCurrent(ctx context.Context) ([]domain.ParkingRe
 	return records, nil
 }
 
-func (r *ParkingRepository) ListHistory(ctx context.Context) ([]domain.ParkingRecord, error) {
+func (r *parkingRepository) ListHistory(ctx context.Context) ([]domain.ParkingRecord, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -245,10 +241,10 @@ func (r *ParkingRepository) ListHistory(ctx context.Context) ([]domain.ParkingRe
 	}
 	defer rows.Close()
 
-	records := []domain.ParkingRecord{}
+	var records []domain.ParkingRecord
 
 	for rows.Next() {
-		record := domain.ParkingRecord{}
+		var record domain.ParkingRecord
 
 		var exitTime sql.NullTime
 		var totalCharge sql.NullFloat64

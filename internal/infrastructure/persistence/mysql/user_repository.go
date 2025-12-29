@@ -7,20 +7,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/internal/application/user"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 )
 
-type UserRepository struct {
+type userRepository struct {
 	DB *sql.DB
 }
 
-func NewUserRepository(db *sql.DB) ports.UserRepository {
-	return &UserRepository{DB: db}
+func NewUserRepository(db *sql.DB) user.Repository {
+	return &userRepository{DB: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
+func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -50,7 +50,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-func (r *UserRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -59,7 +59,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*domain.User,
 		FROM USERS
 		WHERE id = ?;`
 
-	user := &domain.User{}
+	var user domain.User
 
 	row := r.DB.QueryRowContext(ctx, query, id)
 
@@ -77,16 +77,16 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*domain.User,
 		}
 
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ports.ErrUserNotFound
+			return nil, domain.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar usuario: %w", err)
 	}
 
-	return user, nil
+	return &user, nil
 }
 
-func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*domain.User, error) {
+func (r *userRepository) FindByUsername(ctx context.Context, username string) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -95,7 +95,7 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*
 		FROM USERS
 		WHERE username = ?;`
 
-	user := &domain.User{}
+	var user domain.User
 
 	row := r.DB.QueryRowContext(ctx, query, username)
 
@@ -114,16 +114,31 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*
 		}
 
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ports.ErrUserNotFound
+			return nil, domain.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar usuario: %w", err)
 	}
 
-	return user, nil
+	return &user, nil
 }
 
-func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
+func (r *userRepository) ExistsUsername(ctx context.Context, username string) bool {
+	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
+	defer cancel()
+
+	var exists bool
+	query := "SELECT EXISTS(SELECT 1 FROM USERS WHERE username = ?);"
+
+	err := r.DB.QueryRowContext(ctx, query, username).Scan(&exists)
+	if err != nil {
+		return false
+	}
+
+	return exists
+}
+
+func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -140,7 +155,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	}
 
 	if !exists {
-		return ports.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	updateQuery := `
@@ -173,7 +188,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-func (r *UserRepository) Delete(ctx context.Context, id string) error {
+func (r *userRepository) Delete(ctx context.Context, id string) error {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -190,7 +205,7 @@ func (r *UserRepository) Delete(ctx context.Context, id string) error {
 	}
 
 	if !exists {
-		return ports.ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	deleteQuery := `
@@ -215,7 +230,7 @@ func (r *UserRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *UserRepository) ListAll(ctx context.Context, id string) ([]domain.User, error) {
+func (r *userRepository) ListAll(ctx context.Context, id string) ([]domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -234,10 +249,10 @@ func (r *UserRepository) ListAll(ctx context.Context, id string) ([]domain.User,
 	}
 	defer rows.Close()
 
-	users := []domain.User{}
+	var users []domain.User
 
 	for rows.Next() {
-		user := domain.User{}
+		var user domain.User
 
 		err := rows.Scan(
 			&user.ID,

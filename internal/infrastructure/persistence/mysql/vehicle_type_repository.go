@@ -5,20 +5,20 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/internal/application/vehicle_type"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 )
 
-type VehicleTypeRepository struct {
+type vehicleTypeRepository struct {
 	DB *sql.DB
 }
 
-func NewVehicleTypeRepository(db *sql.DB) ports.VehicleTypeRepository {
-	return &VehicleTypeRepository{DB: db}
+func NewVehicleTypeRepository(db *sql.DB) vehicle_type.Repository {
+	return &vehicleTypeRepository{DB: db}
 }
 
-func (r *VehicleTypeRepository) FindByID(ctx context.Context, id string) (*domain.VehicleType, error) {
+func (r *vehicleTypeRepository) FindByID(ctx context.Context, id string) (*domain.VehicleType, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -27,7 +27,7 @@ func (r *VehicleTypeRepository) FindByID(ctx context.Context, id string) (*domai
 		FROM VEHICLE_TYPES
 		WHERE id = ?;`
 
-	record := domain.VehicleType{}
+	var record domain.VehicleType
 
 	row := r.DB.QueryRowContext(ctx, query, id)
 
@@ -44,7 +44,7 @@ func (r *VehicleTypeRepository) FindByID(ctx context.Context, id string) (*domai
 		}
 
 		if err == sql.ErrNoRows {
-			return nil, ports.ErrVehicleTypeNotFound
+			return nil, domain.ErrVehicleTypeNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar tipo de vehículo: %w", err)
@@ -53,7 +53,7 @@ func (r *VehicleTypeRepository) FindByID(ctx context.Context, id string) (*domai
 	return &record, nil
 }
 
-func (r *VehicleTypeRepository) ListAll(ctx context.Context) ([]domain.VehicleType, error) {
+func (r *vehicleTypeRepository) ListAll(ctx context.Context) ([]domain.VehicleType, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.DBTimeout)
 	defer cancel()
 
@@ -72,10 +72,10 @@ func (r *VehicleTypeRepository) ListAll(ctx context.Context) ([]domain.VehicleTy
 	}
 	defer rows.Close()
 
-	vehicleTypes := []domain.VehicleType{}
+	var vehicleTypes []domain.VehicleType
 
 	for rows.Next() {
-		vt := domain.VehicleType{}
+		var vt domain.VehicleType
 
 		err := rows.Scan(
 			&vt.ID,
