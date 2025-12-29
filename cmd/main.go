@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -11,45 +10,32 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/api"
-	"github.com/JGCaceres97/parking/internal/api/handlers"
-	"github.com/JGCaceres97/parking/internal/core/services"
-	"github.com/JGCaceres97/parking/internal/infra/repository/mysql"
+	"github.com/JGCaceres97/parking/internal/adapters/api"
+	"github.com/JGCaceres97/parking/internal/application/auth"
+	"github.com/JGCaceres97/parking/internal/application/parking"
+	"github.com/JGCaceres97/parking/internal/application/user"
+	"github.com/JGCaceres97/parking/internal/application/vehicle_type"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
+	"github.com/JGCaceres97/parking/internal/infrastructure/persistence/mysql"
+	"github.com/JGCaceres97/parking/pkg/ulid"
 )
 
-var cfg *config.Config = config.Load()
-var db *sql.DB
-
-func init() {
-	var err error
-
-	// Inicializar conexión con DB
-	db, err = initDB(cfg.DBConnString)
-	if err != nil {
-		log.Fatalf("error al inicializar la base de datos: %v", err)
-	}
-
-	initRepo := mysql.NewInitRepository(db)
-	initService := services.NewInitService(initRepo)
-
-	password := config.GetEnv("ADMIN_PASSWORD", "admin")
-
-	if err = initService.CreateAdmin(context.Background(), password); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
+	cfg := config.Load()
+
+	db, err := mysql.NewConnection(context.Background(), cfg.DBConnString, config.DBTimeout)
+	if err != nil {
+		log.Fatalf("error al inicializar la conexión con base de datos: %v", err)
+	}
+
 	defer func() {
-		log.Println("Cerrando conexión a MySQL...")
+		log.Println("Cerrando conexión a DB...")
 		if err := db.Close(); err != nil {
 			log.Printf("Advertencia: Error al cerrar la DB: %v", err)
 		}
 
-		log.Println("Conexión a MySQL cerrada.")
+		log.Println("Conexión a DB cerrada.")
 	}()
 
 	// Inyección de dependencias
@@ -59,40 +45,50 @@ func main() {
 	vehicleTypeRepo := mysql.NewVehicleTypeRepository(db)
 
 	// -- B. Servicios
-	authService := services.NewAuthService(userRepo, cfg.JWTSecretKey, cfg.TokenDuration)
-	parkingService := services.NewParkingService(parkingRepo, vehicleTypeRepo)
-	userService := services.NewUserService(userRepo)
-	vehicleTypeService := services.NewVehicleTypeService(vehicleTypeRepo)
+	authService := auth.NewService(userRepo, cfg.JWTSecretKey, cfg.TokenDuration)
+	parkingService := parking.NewService(parkingRepo, vehicleTypeRepo)
+	userService := user.NewService(userRepo)
+	vehicleTypeService := vehicle_type.NewService(vehicleTypeRepo)
 
-	// -- C. Handlers
-	authHandler := handlers.NewAuthHandler(authService)
-	parkingHandler := handlers.NewParkingHandler(parkingService)
-	userHandler := handlers.NewUserHandler(userService)
-	vehicleTypeHandler := handlers.NewVehicleTypeHandler(vehicleTypeService)
-
-	// Configuración del router
-	routerCfg := api.RouterConfig{
-		AuthService: authService,
-
-		AuthHandler:        authHandler,
-		ParkingHandler:     parkingHandler,
-		UserHandler:        userHandler,
-		VehicleTypeHandler: vehicleTypeHandler,
+	// Admin User
+	if err := ensureAdminUser(context.Background(), userService, cfg.AdminPassword); err != nil {
+		log.Fatalf("error asegurando usuario administrador: %v", err)
 	}
 
-	router := api.NewRouter(routerCfg)
+	// Configuración del router
+	handler := api.New(authService, parkingService, userService, vehicleTypeService).SetHandler()
 
 	// Servidor
-	addr := fmt.Sprintf(":%s", cfg.ServerPort)
-	srv := &http.Server{Addr: addr, Handler: router}
+	srv := &http.Server{Addr: ":" + cfg.ServerPort, Handler: handler}
+	start(srv)
+}
 
-	errors := make(chan error, 1)
+func ensureAdminUser(ctx context.Context, service user.Service, password string) error {
+	admin := &domain.User{
+		ID:        ulid.GenerateNewULID(),
+		Username:  domain.AdminUsername,
+		Password:  password,
+		Role:      domain.RoleAdmin,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC().Truncate(time.Second),
+	}
+
+	_, err := service.Create(ctx, admin)
+	if err != nil && !errors.Is(err, domain.ErrUsernameAlreadyExists) {
+		return err
+	}
+
+	return nil
+}
+
+func start(srv *http.Server) {
+	errCh := make(chan error, 1)
 
 	// Arrancar el servidor en una Go-routine.
 	go func() {
-		log.Printf("Servidor escuchando en %s", addr)
+		log.Printf("Servidor escuchando en %s", srv.Addr)
 
-		errors <- srv.ListenAndServe()
+		errCh <- srv.ListenAndServe()
 	}()
 
 	quit := make(chan os.Signal, 1)
@@ -100,7 +96,7 @@ func main() {
 
 	// Bloquear y esperar señal de apagado o error
 	select {
-	case err := <-errors:
+	case err := <-errCh:
 		log.Fatalf("Error de servidor: %v", err)
 	case sig := <-quit:
 		log.Printf("Recibida señal '%v'. Iniciando proceso...", sig)
@@ -114,24 +110,4 @@ func main() {
 
 		log.Println("Servidor detenido con éxito.")
 	}
-}
-
-func initDB(connStr string) (*sql.DB, error) {
-	db, err := sql.Open("mysql", connStr)
-	if err != nil {
-		return nil, fmt.Errorf("error al abrir la conexión con la DB: %w", err)
-	}
-
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute)
-
-	ctx, cancel := context.WithTimeout(context.Background(), config.DBTimeout)
-	defer cancel()
-
-	if err = db.PingContext(ctx); err != nil {
-		return nil, fmt.Errorf("error al hacer ping a la base de datos: %w", err)
-	}
-
-	return db, nil
 }
