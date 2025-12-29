@@ -1,6 +1,6 @@
-package dtos
+package dto
 
-import "github.com/JGCaceres97/parking/internal/core/domain"
+import "github.com/JGCaceres97/parking/internal/domain"
 
 type CreateUserRequest struct {
 	Username string      `json:"username"`

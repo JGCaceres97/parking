@@ -6,24 +6,25 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/api/dtos"
-	"github.com/JGCaceres97/parking/internal/api/middlewares"
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
-	"github.com/JGCaceres97/parking/pkg/response"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/JGCaceres97/parking/internal/adapters/api/dto"
+	"github.com/JGCaceres97/parking/internal/adapters/api/middlewares"
+	"github.com/JGCaceres97/parking/internal/application/user"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
+	"github.com/JGCaceres97/parking/pkg/response"
 )
 
-type UserHandler struct {
-	service ports.UserService
+type userHandler struct {
+	service user.Service
 }
 
-func NewUserHandler(service ports.UserService) *UserHandler {
-	return &UserHandler{service: service}
+func NewUserHandler(service user.Service) *userHandler {
+	return &userHandler{service: service}
 }
 
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -47,11 +48,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, users)
 }
 
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
-	var req dtos.CreateUserRequest
+	var req dto.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
 		return
@@ -81,7 +82,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrUsernameExists) {
+		if errors.Is(err, domain.ErrUsernameAlreadyExists) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
@@ -93,7 +94,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, user)
 }
 
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -109,7 +110,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req dtos.UpdateUserRequest
+	var req dto.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
 		return
@@ -144,12 +145,12 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
 
-		if errors.Is(err, ports.ErrUsernameExists) || errors.Is(err, ports.ErrAdminOperation) {
+		if errors.Is(err, domain.ErrUsernameAlreadyExists) || errors.Is(err, domain.ErrAdminProtected) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
@@ -161,7 +162,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, user)
 }
 
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -188,12 +189,12 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
 
-		if errors.Is(err, ports.ErrAdminOperation) {
+		if errors.Is(err, domain.ErrAdminProtected) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
@@ -205,7 +206,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, nil)
 }
 
-func (h *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -215,7 +216,7 @@ func (h *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req dtos.UpdateUserRequest
+	var req dto.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
 		return
@@ -228,12 +229,12 @@ func (h *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
 
-		if errors.Is(err, ports.ErrUsernameExists) || errors.Is(err, ports.ErrAdminOperation) {
+		if errors.Is(err, domain.ErrUsernameAlreadyExists) || errors.Is(err, domain.ErrAdminProtected) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
@@ -245,7 +246,7 @@ func (h *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, user)
 }
 
-func (h *UserHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -255,7 +256,7 @@ func (h *UserHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var req dtos.ToggleActiveRequest
+	var req dto.ToggleActiveRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
 		return
@@ -268,12 +269,12 @@ func (h *UserHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		if errors.Is(err, ports.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
 
-		if errors.Is(err, ports.ErrAdminOperation) {
+		if errors.Is(err, domain.ErrAdminProtected) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}

@@ -6,23 +6,25 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/api/dtos"
-	"github.com/JGCaceres97/parking/internal/api/middlewares"
-	"github.com/JGCaceres97/parking/internal/ports"
-	"github.com/JGCaceres97/parking/pkg/response"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/JGCaceres97/parking/internal/adapters/api/dto"
+	"github.com/JGCaceres97/parking/internal/adapters/api/middlewares"
+	"github.com/JGCaceres97/parking/internal/application/parking"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
+	"github.com/JGCaceres97/parking/pkg/response"
 )
 
-type ParkingHandler struct {
-	service ports.ParkingService
+type parkingHandler struct {
+	service parking.Service
 }
 
-func NewParkingHandler(service ports.ParkingService) *ParkingHandler {
-	return &ParkingHandler{service: service}
+func NewParkingHandler(service parking.Service) *parkingHandler {
+	return &parkingHandler{service: service}
 }
 
-func (h *ParkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
+func (h *parkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -32,7 +34,7 @@ func (h *ParkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req dtos.EntryRequest
+	var req dto.EntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
 		return
@@ -50,12 +52,12 @@ func (h *ParkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrActiveParkingExists) {
+		if errors.Is(err, domain.ErrActiveParkingAlreadyExists) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
 		}
 
-		if errors.Is(err, ports.ErrVehicleTypeNotFound) {
+		if errors.Is(err, domain.ErrVehicleTypeNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
@@ -67,7 +69,7 @@ func (h *ParkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, record)
 }
 
-func (h *ParkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
+func (h *parkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -77,7 +79,7 @@ func (h *ParkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req dtos.ExitRequest
+	var req dto.ExitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
 		return
@@ -95,7 +97,7 @@ func (h *ParkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrActiveParkingNotFound) {
+		if errors.Is(err, domain.ErrActiveParkingNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
@@ -107,7 +109,7 @@ func (h *ParkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, exitRecord)
 }
 
-func (h *ParkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
+func (h *parkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -124,7 +126,7 @@ func (h *ParkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.Is(err, ports.ErrParkingRecordNotFound) {
+		if errors.Is(err, domain.ErrParkingRecordNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
 		}
@@ -136,7 +138,7 @@ func (h *ParkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, record)
 }
 
-func (h *ParkingHandler) GetCurrentlyParked(w http.ResponseWriter, r *http.Request) {
+func (h *parkingHandler) GetCurrentlyParked(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 
@@ -154,7 +156,7 @@ func (h *ParkingHandler) GetCurrentlyParked(w http.ResponseWriter, r *http.Reque
 	response.JSON(w, http.StatusOK, records)
 }
 
-func (h *ParkingHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
+func (h *parkingHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 

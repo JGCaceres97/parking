@@ -1,10 +1,10 @@
-package dtos
+package dto
 
-import "github.com/JGCaceres97/parking/internal/core/domain"
+import "github.com/JGCaceres97/parking/internal/domain"
 
 type LoginRequest struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {

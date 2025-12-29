@@ -3,7 +3,7 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/JGCaceres97/parking/internal/core/domain"
+	"github.com/JGCaceres97/parking/internal/domain"
 	"github.com/JGCaceres97/parking/pkg/response"
 )
 

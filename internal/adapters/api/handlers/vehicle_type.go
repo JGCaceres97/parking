@@ -4,20 +4,20 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/JGCaceres97/parking/config"
-	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/internal/application/vehicle_type"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 	"github.com/JGCaceres97/parking/pkg/response"
 )
 
-type VehicleTypeHandler struct {
-	service ports.VehicleTypeService
+type vehicleTypeHandler struct {
+	service vehicle_type.Service
 }
 
-func NewVehicleTypeHandler(service ports.VehicleTypeService) *VehicleTypeHandler {
-	return &VehicleTypeHandler{service: service}
+func NewVehicleTypeHandler(service vehicle_type.Service) *vehicleTypeHandler {
+	return &vehicleTypeHandler{service: service}
 }
 
-func (h *VehicleTypeHandler) ListAll(w http.ResponseWriter, r *http.Request) {
+func (h *vehicleTypeHandler) ListAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
 	defer cancel()
 

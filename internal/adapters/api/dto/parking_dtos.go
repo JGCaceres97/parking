@@ -1,4 +1,4 @@
-package dtos
+package dto
 
 type EntryRequest struct {
 	VehicleTypeID string `json:"vehicle_type_id"`
