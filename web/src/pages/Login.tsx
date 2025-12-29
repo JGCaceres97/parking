@@ -28,7 +28,7 @@ function Login() {
       const res = await fetch("/api/v1/login", {
         body: JSON.stringify({ username, password }),
         headers: { "Content-Type": "application/json" },
-        method: "POST",
+        method: "POST"
       });
 
       const data = await res.json();
@@ -58,18 +58,14 @@ function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-br from-gray-200 via-gray-300 to-gray-400 text-gray-800">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">
-        Gestión de Estacionamiento
-      </h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-800">Gestión de Estacionamiento</h1>
 
       <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-8">
         <div className="flex justify-center text-gray-700">
           <FaCarSide className="w-16 h-16" />
         </div>
 
-        <h2 className="text-2xl font-semibold text-center mb-6 text-gray-700">
-          Inicio de Sesión
-        </h2>
+        <h2 className="text-2xl font-semibold text-center mb-6 text-gray-700">Inicio de Sesión</h2>
 
         {error && (
           <div
@@ -83,10 +79,7 @@ function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-600 mb-1"
-            >
+            <label htmlFor="username" className="block text-sm font-medium text-gray-600 mb-1">
               Usuario
             </label>
             <input
@@ -94,17 +87,14 @@ function Login() {
               id="username"
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              onChange={e => setUsername(e.target.value.toLowerCase())}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 hover:border-gray-400 hover:shadow-sm transition-all"
               placeholder="Ingresa tu usuario"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-600 mb-1"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-600 mb-1">
               Contraseña
             </label>
             <input
@@ -112,7 +102,7 @@ function Login() {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 hover:border-gray-400 hover:shadow-sm transition-all"
               placeholder="••••••••"
             />
