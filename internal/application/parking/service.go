@@ -1,4 +1,4 @@
-package services
+package parking
 
 import (
 	"context"
@@ -7,39 +7,39 @@ import (
 	"math"
 	"time"
 
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/internal/application/vehicle_type"
+	"github.com/JGCaceres97/parking/internal/domain"
 	"github.com/JGCaceres97/parking/pkg/ulid"
 )
 
-type ParkingService struct {
-	repo        ports.ParkingRepository
-	vehicleRepo ports.VehicleTypeRepository
+type service struct {
+	repo        Repository
+	vehicleRepo vehicle_type.Repository
 }
 
-func NewParkingService(repo ports.ParkingRepository, vehicleRepo ports.VehicleTypeRepository) ports.ParkingService {
-	return &ParkingService{
+func NewService(repo Repository, vehicleRepo vehicle_type.Repository) Service {
+	return &service{
 		repo:        repo,
 		vehicleRepo: vehicleRepo,
 	}
 }
 
-func (s *ParkingService) RecordEntry(ctx context.Context, userID, vehicleTypeID, licensePlate string) (*domain.ParkingRecord, error) {
+func (s *service) RecordEntry(ctx context.Context, userID, vehicleTypeID, licensePlate string) (*domain.ParkingRecord, error) {
 	// Verificar si ya existe registro abierto para la placa.
 	_, err := s.repo.FindOpenByLicensePlate(ctx, licensePlate)
 	if err == nil {
-		return nil, ports.ErrActiveParkingExists
+		return nil, domain.ErrActiveParkingAlreadyExists
 	}
 
-	if !errors.Is(err, ports.ErrParkingRecordNotFound) {
+	if !errors.Is(err, domain.ErrParkingRecordNotFound) {
 		return nil, fmt.Errorf("error al verificar registro abierto: %w", err)
 	}
 
 	// Verificar que el tipo de vehículo sea válido.
 	_, err = s.vehicleRepo.FindByID(ctx, vehicleTypeID)
 	if err != nil {
-		if errors.Is(err, ports.ErrVehicleTypeNotFound) {
-			return nil, ports.ErrVehicleTypeNotFound
+		if errors.Is(err, domain.ErrVehicleTypeNotFound) {
+			return nil, domain.ErrVehicleTypeNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar tipo de vehículo: %w", err)
@@ -60,11 +60,11 @@ func (s *ParkingService) RecordEntry(ctx context.Context, userID, vehicleTypeID,
 	return &record, nil
 }
 
-func (s *ParkingService) RecordExit(ctx context.Context, userID, licensePlate string) (*domain.ParkingRecord, error) {
+func (s *service) RecordExit(ctx context.Context, userID, licensePlate string) (*domain.ParkingRecord, error) {
 	record, err := s.repo.FindOpenByLicensePlate(ctx, licensePlate)
 	if err != nil {
-		if errors.Is(err, ports.ErrParkingRecordNotFound) {
-			return nil, ports.ErrActiveParkingNotFound
+		if errors.Is(err, domain.ErrParkingRecordNotFound) {
+			return nil, domain.ErrActiveParkingNotFound
 		}
 
 		return nil, fmt.Errorf("error al buscar registro abierto: %w", err)
@@ -91,15 +91,15 @@ func (s *ParkingService) RecordExit(ctx context.Context, userID, licensePlate st
 	return record, nil
 }
 
-func (s *ParkingService) GetCurrentlyParked(ctx context.Context) ([]domain.ParkingRecord, error) {
+func (s *service) GetCurrentlyParked(ctx context.Context) ([]domain.ParkingRecord, error) {
 	return s.repo.ListCurrent(ctx)
 }
 
-func (s *ParkingService) GetHistory(ctx context.Context) ([]domain.ParkingRecord, error) {
+func (s *service) GetHistory(ctx context.Context) ([]domain.ParkingRecord, error) {
 	return s.repo.ListHistory(ctx)
 }
 
-func (s *ParkingService) GetRecordByID(ctx context.Context, id string) (*domain.ParkingRecord, error) {
+func (s *service) GetRecordByID(ctx context.Context, id string) (*domain.ParkingRecord, error) {
 	record, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err

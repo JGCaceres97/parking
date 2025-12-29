@@ -1,4 +1,4 @@
-package services
+package auth
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/JGCaceres97/parking/internal/api/dtos"
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
+	"github.com/JGCaceres97/parking/internal/application/user"
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/pkg/ulid"
 )
 
-type AuthService struct {
-	repo          ports.UserRepository
+type service struct {
+	repo          user.Repository
 	secretKey     []byte
 	tokenDuration time.Duration
 }
@@ -26,31 +26,58 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAuthService(repo ports.UserRepository, secretKey string, tokenDuration time.Duration) ports.AuthService {
-	return &AuthService{
+func NewService(repo user.Repository, secretKey string, tokenDuration time.Duration) Service {
+	return &service{
 		repo:          repo,
 		secretKey:     []byte(secretKey),
 		tokenDuration: tokenDuration,
 	}
 }
 
-func (s *AuthService) Login(ctx context.Context, req dtos.LoginRequest) (*dtos.LoginResponse, error) {
+func (s *service) CreateAdmin(ctx context.Context, password string) error {
+	exists := s.repo.ExistsUsername(ctx, domain.AdminUsername)
+	if exists {
+		return nil
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("error al hashear contraseña de administrador: %w", err)
+	}
+
+	admin := &domain.User{
+		ID:        ulid.GenerateNewULID(),
+		Username:  domain.AdminUsername,
+		Password:  string(hashedPassword),
+		Role:      domain.RoleAdmin,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC().Truncate(time.Second),
+	}
+
+	if err := s.repo.Create(ctx, admin); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) Login(ctx context.Context, req LoginInput) (*LoginOutput, error) {
 	user, err := s.repo.FindByUsername(ctx, req.Username)
 	if err != nil {
-		if errors.Is(err, ports.ErrUserNotFound) {
-			return nil, ports.ErrInvalidCredentials
+		if errors.Is(err, domain.ErrUserNotFound) {
+			return nil, domain.ErrInvalidCredentials
 		}
 
 		return nil, fmt.Errorf("error del repositorio al buscar usuario: %w", err)
 	}
 
 	if !user.IsActive {
-		return nil, ports.ErrUserBlocked
+		return nil, domain.ErrUserInactive
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return nil, ports.ErrInvalidCredentials
+			return nil, domain.ErrInvalidCredentials
 		}
 
 		return nil, fmt.Errorf("error al comparar hash: %w", err)
@@ -61,7 +88,7 @@ func (s *AuthService) Login(ctx context.Context, req dtos.LoginRequest) (*dtos.L
 		return nil, fmt.Errorf("error al generar token: %w", err)
 	}
 
-	response := &dtos.LoginResponse{
+	response := &LoginOutput{
 		Role:      user.Role,
 		Token:     tokenStr,
 		TokenType: "Bearer",
@@ -71,7 +98,7 @@ func (s *AuthService) Login(ctx context.Context, req dtos.LoginRequest) (*dtos.L
 	return response, nil
 }
 
-func (s *AuthService) ParseToken(tokenStr string) (userID string, role domain.Role, err error) {
+func (s *service) ParseToken(tokenStr string) (userID string, role domain.Role, err error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
@@ -84,20 +111,20 @@ func (s *AuthService) ParseToken(tokenStr string) (userID string, role domain.Ro
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return "", "", ports.ErrTokenExpired
+			return "", "", ErrExpiredToken
 		}
 
-		return "", "", ports.ErrInvalidToken
+		return "", "", ErrInvalidToken
 	}
 
 	if !token.Valid {
-		return "", "", ports.ErrInvalidToken
+		return "", "", ErrInvalidToken
 	}
 
 	return claims.UserID, claims.Role, nil
 }
 
-func (s *AuthService) generateToken(userID, role string) (string, time.Time, error) {
+func (s *service) generateToken(userID, role string) (string, time.Time, error) {
 	expirationTime := time.Now().Add(s.tokenDuration)
 
 	claims := &Claims{

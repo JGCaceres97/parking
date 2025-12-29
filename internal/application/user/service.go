@@ -1,4 +1,4 @@
-package services
+package user
 
 import (
 	"context"
@@ -6,28 +6,24 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/JGCaceres97/parking/internal/core/domain"
-	"github.com/JGCaceres97/parking/internal/ports"
-	"github.com/JGCaceres97/parking/pkg/ulid"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/pkg/ulid"
 )
 
-type UserService struct {
-	repo ports.UserRepository
+type service struct {
+	repo Repository
 }
 
-func NewUserService(repo ports.UserRepository) ports.UserService {
-	return &UserService{repo: repo}
+func NewService(repo Repository) Service {
+	return &service{repo: repo}
 }
 
-func (s *UserService) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
-	existingUser, err := s.repo.FindByUsername(ctx, user.Username)
-	if err != nil && !errors.Is(err, ports.ErrUserNotFound) {
-		return nil, fmt.Errorf("error al buscar usuario por nombre: %w", err)
-	}
-
-	if existingUser != nil {
-		return nil, ports.ErrUsernameExists
+func (s *service) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
+	exists := s.repo.ExistsUsername(ctx, user.Username)
+	if exists {
+		return nil, domain.ErrUsernameAlreadyExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -47,9 +43,9 @@ func (s *UserService) Create(ctx context.Context, user *domain.User) (*domain.Us
 	return user, nil
 }
 
-func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain.User) (*domain.User, error) {
+func (s *service) Update(ctx context.Context, id string, userUpdated *domain.User) (*domain.User, error) {
 	if userUpdated.Username == domain.AdminUsername {
-		return nil, ports.ErrAdminOperation
+		return nil, domain.ErrAdminProtected
 	}
 
 	existingUser, err := s.repo.FindByID(ctx, id)
@@ -58,7 +54,7 @@ func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain
 	}
 
 	if existingName, _ := s.repo.FindByUsername(ctx, userUpdated.Username); existingName != nil && id != existingName.ID {
-		return nil, ports.ErrUsernameExists
+		return nil, domain.ErrUsernameAlreadyExists
 	}
 
 	existingUser.Username = userUpdated.Username
@@ -66,7 +62,7 @@ func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain
 	existingUser.IsActive = userUpdated.IsActive
 
 	if err := s.repo.Update(ctx, existingUser); err != nil {
-		if errors.Is(err, ports.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			return nil, err
 		}
 
@@ -77,18 +73,18 @@ func (s *UserService) Update(ctx context.Context, id string, userUpdated *domain
 	return existingUser, nil
 }
 
-func (s *UserService) Delete(ctx context.Context, id string) error {
+func (s *service) Delete(ctx context.Context, id string) error {
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	if user.Username == domain.AdminUsername {
-		return ports.ErrAdminOperation
+		return domain.ErrAdminProtected
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
-		if errors.Is(err, ports.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			return err
 		}
 
@@ -98,14 +94,14 @@ func (s *UserService) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *UserService) ToggleActive(ctx context.Context, id string, isActive bool) (*domain.User, error) {
+func (s *service) ToggleActive(ctx context.Context, id string, isActive bool) (*domain.User, error) {
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if user.Username == domain.AdminUsername {
-		return nil, ports.ErrAdminOperation
+		return nil, domain.ErrAdminProtected
 	}
 
 	if user.IsActive == isActive {
@@ -120,22 +116,22 @@ func (s *UserService) ToggleActive(ctx context.Context, id string, isActive bool
 	return user, nil
 }
 
-func (s *UserService) ListAll(ctx context.Context, id string) ([]domain.User, error) {
+func (s *service) ListAll(ctx context.Context, id string) ([]domain.User, error) {
 	return s.repo.ListAll(ctx, id)
 }
 
-func (s *UserService) UpdateUsername(ctx context.Context, id string, newUsername string) (*domain.User, error) {
+func (s *service) UpdateUsername(ctx context.Context, id string, newUsername string) (*domain.User, error) {
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if user.Username == domain.AdminUsername {
-		return nil, ports.ErrAdminOperation
+		return nil, domain.ErrAdminProtected
 	}
 
 	if existingName, _ := s.repo.FindByUsername(ctx, newUsername); existingName != nil && id != existingName.ID {
-		return nil, ports.ErrUsernameExists
+		return nil, domain.ErrUsernameAlreadyExists
 	}
 
 	user.Username = newUsername
