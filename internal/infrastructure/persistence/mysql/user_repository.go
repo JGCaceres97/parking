@@ -249,7 +249,7 @@ func (r *userRepository) ListAll(ctx context.Context, id string) ([]domain.User,
 	}
 	defer rows.Close()
 
-	var users []domain.User
+	users := []domain.User{}
 
 	for rows.Next() {
 		var user domain.User

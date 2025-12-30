@@ -72,7 +72,7 @@ func (r *vehicleTypeRepository) ListAll(ctx context.Context) ([]domain.VehicleTy
 	}
 	defer rows.Close()
 
-	var vehicleTypes []domain.VehicleType
+	vehicleTypes := []domain.VehicleType{}
 
 	for rows.Next() {
 		var vt domain.VehicleType

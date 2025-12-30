@@ -194,7 +194,7 @@ func (r *parkingRepository) ListCurrent(ctx context.Context) ([]domain.ParkingRe
 	}
 	defer rows.Close()
 
-	var records []domain.ParkingRecord
+	records := []domain.ParkingRecord{}
 
 	for rows.Next() {
 		var record domain.ParkingRecord
