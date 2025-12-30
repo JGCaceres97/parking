@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 func NewConnection(ctx context.Context, dsn string, timeout time.Duration) (*sql.DB, error) {
