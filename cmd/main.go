@@ -17,14 +17,19 @@ import (
 	"github.com/JGCaceres97/parking/internal/application/vehicle_type"
 	"github.com/JGCaceres97/parking/internal/domain"
 	"github.com/JGCaceres97/parking/internal/infrastructure/config"
-	"github.com/JGCaceres97/parking/internal/infrastructure/persistence/mysql"
+	"github.com/JGCaceres97/parking/internal/infrastructure/persistence"
 	"github.com/JGCaceres97/parking/pkg/ulid"
 )
 
 func main() {
 	cfg := config.Load()
 
-	db, err := mysql.NewConnection(context.Background(), cfg.DBConnString, config.DBTimeout)
+	db, err := persistence.NewConnection(
+		context.Background(),
+		cfg.DBDriver,
+		cfg.DBConnString,
+		config.DBTimeout)
+
 	if err != nil {
 		log.Fatalf("error al inicializar la conexión con base de datos: %v", err)
 	}
@@ -40,15 +45,13 @@ func main() {
 
 	// Inyección de dependencias
 	// -- A. Repositorios
-	parkingRepo := mysql.NewParkingRepository(db)
-	userRepo := mysql.NewUserRepository(db)
-	vehicleTypeRepo := mysql.NewVehicleTypeRepository(db)
+	repos := persistence.NewRepositories(db, cfg.DBDriver)
 
 	// -- B. Servicios
-	authService := auth.NewService(userRepo, cfg.JWTSecretKey, cfg.TokenDuration)
-	parkingService := parking.NewService(parkingRepo, vehicleTypeRepo)
-	userService := user.NewService(userRepo)
-	vehicleTypeService := vehicle_type.NewService(vehicleTypeRepo)
+	authService := auth.NewService(repos.User, cfg.JWTSecretKey, cfg.TokenDuration)
+	parkingService := parking.NewService(repos.Parking, repos.VehicleType)
+	userService := user.NewService(repos.User)
+	vehicleTypeService := vehicle_type.NewService(repos.VehicleType)
 
 	// Admin User
 	if err := ensureAdminUser(context.Background(), userService, cfg.AdminPassword); err != nil {
