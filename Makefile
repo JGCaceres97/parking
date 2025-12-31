@@ -21,6 +21,9 @@ endif
 #-------------------------
 .PHONY: all db-up db-down migrate-up migrate-down migrate-status
 
+# Comando por defecto
+all: db-up migrate-up
+
 ## DB (Docker Compose)
 # ------------------------------------------------------------
 # Inicia los contenedores de Docker en segundo plano.
@@ -64,6 +67,3 @@ migrate-reset:
 migrate-status:
 	@echo "📊 Verificando estado de las migraciones..."
 	go tool goose $(DB_DRIVER) "$(DB_CONN)" status -dir $(GOOSE_MIGRATIONS_DIR)
-
-# Comando por defecto
-all: db-up migrate-up
