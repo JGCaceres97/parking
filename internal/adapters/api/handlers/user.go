@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"github.com/JGCaceres97/parking/internal/adapters/api/middlewares"
 	"github.com/JGCaceres97/parking/internal/application/user"
 	"github.com/JGCaceres97/parking/internal/domain"
-	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 	"github.com/JGCaceres97/parking/pkg/response"
 )
 
@@ -25,22 +23,14 @@ func NewUserHandler(service user.Service) *userHandler {
 }
 
 func (h *userHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	userID, err := middlewares.GetUserIDFromContext(ctx)
+	userID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
 	}
 
-	users, err := h.service.ListAll(ctx, userID)
+	users, err := h.service.ListAll(r.Context(), userID)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
 	}
@@ -49,9 +39,6 @@ func (h *userHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
 	var req dto.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
@@ -75,13 +62,8 @@ func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive: req.IsActive,
 	}
 
-	user, err := h.service.Create(ctx, newUser)
+	user, err := h.service.Create(r.Context(), newUser)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrUsernameAlreadyExists) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
@@ -95,10 +77,7 @@ func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	authUserID, err := middlewares.GetUserIDFromContext(ctx)
+	authUserID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
@@ -138,13 +117,8 @@ func (h *userHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive: req.IsActive,
 	}
 
-	user, err := h.service.Update(ctx, userID, updatedUser)
+	user, err := h.service.Update(r.Context(), userID, updatedUser)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
@@ -163,10 +137,7 @@ func (h *userHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	authUserID, err := middlewares.GetUserIDFromContext(ctx)
+	authUserID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
@@ -183,12 +154,7 @@ func (h *userHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Delete(ctx, userID); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
+	if err := h.service.Delete(r.Context(), userID); err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
@@ -207,10 +173,7 @@ func (h *userHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	userID, err := middlewares.GetUserIDFromContext(ctx)
+	userID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
@@ -222,13 +185,8 @@ func (h *userHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.UpdateUsername(ctx, userID, req.Username)
+	user, err := h.service.UpdateUsername(r.Context(), userID, req.Username)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
@@ -247,9 +205,6 @@ func (h *userHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
 	userID := chi.URLParam(r, "userID")
 	if userID == "" {
 		response.ErrorJSON(w, response.ErrInvalidID, http.StatusBadRequest)
@@ -262,13 +217,8 @@ func (h *userHandler) ToggleActiveStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	user, err := h.service.ToggleActive(ctx, userID, req.IsActive)
+	user, err := h.service.ToggleActive(r.Context(), userID, req.IsActive)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrUserNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return

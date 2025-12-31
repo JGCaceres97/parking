@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"github.com/JGCaceres97/parking/internal/adapters/api/middlewares"
 	"github.com/JGCaceres97/parking/internal/application/parking"
 	"github.com/JGCaceres97/parking/internal/domain"
-	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 	"github.com/JGCaceres97/parking/pkg/response"
 )
 
@@ -25,10 +23,7 @@ func NewParkingHandler(service parking.Service) *parkingHandler {
 }
 
 func (h *parkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	userID, err := middlewares.GetUserIDFromContext(ctx)
+	userID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
@@ -45,13 +40,8 @@ func (h *parkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	record, err := h.service.RecordEntry(ctx, userID, req.VehicleTypeID, req.LicensePlate)
+	record, err := h.service.RecordEntry(r.Context(), userID, req.VehicleTypeID, req.LicensePlate)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrActiveParkingAlreadyExists) {
 			response.ErrorJSON(w, err, http.StatusConflict)
 			return
@@ -70,10 +60,7 @@ func (h *parkingHandler) RecordEntry(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *parkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	userID, err := middlewares.GetUserIDFromContext(ctx)
+	userID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
@@ -90,13 +77,8 @@ func (h *parkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exitRecord, err := h.service.RecordExit(ctx, userID, req.LicensePlate)
+	exitRecord, err := h.service.RecordExit(r.Context(), userID, req.LicensePlate)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrActiveParkingNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
@@ -110,22 +92,14 @@ func (h *parkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *parkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
 	recordID := chi.URLParam(r, "id")
 	if recordID == "" {
 		response.ErrorJSON(w, response.ErrRegistryIDRequired, http.StatusBadRequest)
 		return
 	}
 
-	record, err := h.service.GetRecordByID(ctx, recordID)
+	record, err := h.service.GetRecordByID(r.Context(), recordID)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrParkingRecordNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
 			return
@@ -139,16 +113,8 @@ func (h *parkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *parkingHandler) GetCurrentlyParked(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	records, err := h.service.GetCurrentlyParked(ctx)
+	records, err := h.service.GetCurrentlyParked(r.Context())
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
 	}
@@ -157,16 +123,8 @@ func (h *parkingHandler) GetCurrentlyParked(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *parkingHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
-	records, err := h.service.GetHistory(ctx)
+	records, err := h.service.GetHistory(r.Context())
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
 		return
 	}

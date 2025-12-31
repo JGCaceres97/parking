@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,6 +13,7 @@ import (
 	"github.com/JGCaceres97/parking/internal/application/user"
 	"github.com/JGCaceres97/parking/internal/application/vehicle_type"
 	"github.com/JGCaceres97/parking/internal/domain"
+	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 	"github.com/JGCaceres97/parking/web"
 )
 
@@ -43,7 +43,7 @@ func (rc *routerConfig) SetHandler() http.Handler {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(middleware.Timeout(config.HandlerTimeout))
 
 	r.Handle("/*", web.Handler)
 

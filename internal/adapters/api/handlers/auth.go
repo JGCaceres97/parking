@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 	"github.com/JGCaceres97/parking/internal/adapters/api/dto"
 	"github.com/JGCaceres97/parking/internal/application/auth"
 	"github.com/JGCaceres97/parking/internal/domain"
-	"github.com/JGCaceres97/parking/internal/infrastructure/config"
 	"github.com/JGCaceres97/parking/pkg/response"
 )
 
@@ -22,9 +20,6 @@ func NewAuthHandler(service auth.Service) *authHandler {
 }
 
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.HandlerTimeout)
-	defer cancel()
-
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.ErrorJSON(w, response.ErrInvalidJSON, http.StatusBadRequest)
@@ -32,15 +27,10 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	out, err := h.service.Login(
-		ctx,
+		r.Context(),
 		auth.LoginInput{Username: req.Username, Password: req.Password})
 
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			response.ErrorJSON(w, response.ErrTimeout, http.StatusServiceUnavailable)
-			return
-		}
-
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			response.ErrorJSON(w, response.ErrInvalidCredentials, http.StatusUnauthorized)
 			return
