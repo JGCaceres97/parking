@@ -48,7 +48,7 @@ func AuthMiddleware(service auth.Service) func(http.Handler) http.Handler {
 			userID, role, err := service.ParseToken(token)
 			if err != nil {
 				if errors.Is(err, auth.ErrExpiredToken) {
-					response.ErrorJSON(w, response.ErrTokenExpired, http.StatusUnauthorized)
+					response.ErrorJSON(w, response.ErrExpiredToken, http.StatusUnauthorized)
 					return
 				}
 
@@ -66,7 +66,7 @@ func AuthMiddleware(service auth.Service) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, UserIDKey, userID)
 			ctx = context.WithValue(ctx, UserRoleKey, role)
 
-			// Pasar el control
+			// Continuar flujo
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

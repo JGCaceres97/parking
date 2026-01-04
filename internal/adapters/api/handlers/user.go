@@ -25,7 +25,7 @@ func NewUserHandler(service user.Service) *userHandler {
 func (h *userHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	userID, err := middlewares.GetUserIDFromContext(r.Context())
 	if err != nil {
-		response.ErrorJSON(w, response.ErrInternalError, http.StatusInternalServerError)
+		response.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 

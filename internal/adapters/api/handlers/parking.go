@@ -77,7 +77,7 @@ func (h *parkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exitRecord, err := h.service.RecordExit(r.Context(), userID, req.LicensePlate)
+	record, err := h.service.RecordExit(r.Context(), userID, req.LicensePlate)
 	if err != nil {
 		if errors.Is(err, domain.ErrActiveParkingNotFound) {
 			response.ErrorJSON(w, err, http.StatusNotFound)
@@ -88,7 +88,7 @@ func (h *parkingHandler) RecordExit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusCreated, exitRecord)
+	response.JSON(w, http.StatusCreated, record)
 }
 
 func (h *parkingHandler) GetRecordByID(w http.ResponseWriter, r *http.Request) {
