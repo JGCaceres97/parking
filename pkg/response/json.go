@@ -2,8 +2,11 @@ package response
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
+
+var ErrInvalidJSON = errors.New("solicitud JSON inválida")
 
 func JSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
