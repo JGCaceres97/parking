@@ -34,16 +34,16 @@ func New(auth auth.Service, parking parking.Service, user user.Service, vehicleT
 }
 
 func (rc *routerConfig) SetHandler() http.Handler {
-	authHandler := handlers.NewAuthHandler(rc.auth)
-	parkingHandler := handlers.NewParkingHandler(rc.parking)
-	userHandler := handlers.NewUserHandler(rc.user)
-	vehicleTypeHandler := handlers.NewVehicleTypeHandler(rc.vehicleType)
-
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(config.HandlerTimeout))
+
+	authHandler := handlers.NewAuthHandler(rc.auth)
+	parkingHandler := handlers.NewParkingHandler(rc.parking)
+	userHandler := handlers.NewUserHandler(rc.user)
+	vehicleTypeHandler := handlers.NewVehicleTypeHandler(rc.vehicleType)
 
 	r.Handle("/*", web.Handler)
 
